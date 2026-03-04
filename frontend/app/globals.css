@@ -1,0 +1,371 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-syne: 'Syne', sans-serif;
+  --font-outfit: 'Outfit', sans-serif;
+
+  --bg-base: #050d1a;
+  --bg-surface: #091628;
+  --bg-card: #0f1e35;
+  --bg-elevated: #152843;
+
+  --accent: #f0a030;
+  --accent-dim: #c4801f;
+  --accent-glow: rgba(240, 160, 48, 0.15);
+
+  --teal: #2dd4bf;
+  --teal-glow: rgba(45, 212, 191, 0.12);
+
+  --border: rgba(255, 255, 255, 0.07);
+  --border-accent: rgba(240, 160, 48, 0.3);
+
+  --text-primary: #f0f4ff;
+  --text-secondary: #7a8ba8;
+  --text-muted: #3d5070;
+}
+
+/* ── Light theme ──────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg-base: #f0f4f8;
+  --bg-surface: #ffffff;
+  --bg-card: #f8fafc;
+  --bg-elevated: #edf2f7;
+
+  --accent: #d4840a;
+  --accent-dim: #b56e08;
+  --accent-glow: rgba(212, 132, 10, 0.12);
+
+  --border: rgba(0, 0, 0, 0.08);
+  --border-accent: rgba(212, 132, 10, 0.35);
+
+  --text-primary: #1a2235;
+  --text-secondary: #4a5568;
+  --text-muted: #a0aec0;
+}
+
+[data-theme="light"] .mesh-bg {
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 0%, rgba(212, 132, 10, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 90% 100%, rgba(45, 212, 191, 0.06) 0%, transparent 60%);
+}
+
+[data-theme="light"] .chat-bot {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-outfit);
+  -webkit-font-smoothing: antialiased;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-elevated);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-dim);
+}
+
+/* ── Glass card ───────────────────────────────────────────────── */
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  backdrop-filter: blur(12px);
+}
+
+.glass-card-hover {
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.glass-card-hover:hover {
+  border-color: var(--border-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--border-accent);
+}
+
+/* ── Accent glow button ───────────────────────────────────────── */
+.btn-accent {
+  background: var(--accent);
+  color: #0a0f1e;
+  font-family: var(--font-syne);
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.btn-accent:hover {
+  background: var(--accent-dim);
+  box-shadow: 0 0 20px var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+.btn-accent:active {
+  transform: translateY(0);
+}
+
+/* ── Nav item ─────────────────────────────────────────────────── */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-family: var(--font-outfit);
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+
+.nav-item:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.nav-item.active {
+  background: var(--accent-glow);
+  color: var(--accent);
+  border-color: var(--border-accent);
+}
+
+/* ── Stat card number ─────────────────────────────────────────── */
+.stat-number {
+  font-family: var(--font-syne);
+  font-weight: 700;
+  font-size: 2rem;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Chat bubble ──────────────────────────────────────────────── */
+.chat-user {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+  color: #0a0f1e;
+  border-radius: 16px 16px 4px 16px;
+  font-weight: 500;
+}
+
+.chat-bot {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 16px 16px 16px 4px;
+  color: var(--text-primary);
+}
+
+/* ── Table ────────────────────────────────────────────────────── */
+.hr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.hr-table thead tr {
+  border-bottom: 1px solid var(--border);
+}
+
+.hr-table thead th {
+  text-align: left;
+  padding: 10px 14px;
+  color: var(--text-secondary);
+  font-family: var(--font-syne);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hr-table tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: background 0.15s;
+}
+
+.hr-table tbody tr:hover {
+  background: var(--bg-elevated);
+}
+
+.hr-table tbody td {
+  padding: 10px 14px;
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+/* ── Input ────────────────────────────────────────────────────── */
+.hr-input {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: var(--font-outfit);
+  font-size: 14px;
+  padding: 8px 12px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.hr-input:focus {
+  border-color: var(--border-accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.hr-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* ── Badge ────────────────────────────────────────────────────── */
+.badge-active {
+  background: rgba(45, 212, 155, 0.12);
+  color: #2dd49b;
+  border: 1px solid rgba(45, 212, 155, 0.25);
+}
+
+.badge-inactive {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.badge-exceeds {
+  background: rgba(240, 160, 48, 0.12);
+  color: #f0a030;
+  border: 1px solid rgba(240, 160, 48, 0.25);
+}
+
+.badge-meets {
+  background: rgba(99, 179, 237, 0.12);
+  color: #63b3ed;
+  border: 1px solid rgba(99, 179, 237, 0.25);
+}
+
+.badge-needs {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.badge-pip {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+/* ── Mesh background ──────────────────────────────────────────── */
+.mesh-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 0%, rgba(240, 160, 48, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 90% 100%, rgba(45, 212, 191, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 80% at 50% 50%, rgba(15, 30, 53, 0.8) 0%, transparent 100%);
+}
+
+/* ── Typing indicator ─────────────────────────────────────────── */
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: bounce 1.2s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+
+  30% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}
+
+/* ── Page transitions ─────────────────────────────────────────── */
+.page-enter {
+  animation: slideUp 0.35s ease-out;
+}
+
+/* ── Recharts overrides ───────────────────────────────────────── */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: rgba(255, 255, 255, 0.04) !important;
+}
+
+.recharts-text {
+  fill: var(--text-secondary) !important;
+  font-size: 11px !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border-accent) !important;
+  border-radius: 8px !important;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
