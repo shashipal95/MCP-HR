@@ -150,10 +150,12 @@ def get_employees(
     name: str = Query(None),
     department: str = Query(None),
     status: str = Query(None),
-    limit: int = Query(500),
+    limit: int = Query(50),
+    offset: int = Query(0),
 ):
     if not DB_PATH.exists():
-        return {"employees": [], "total": 0}
+        return {"employees": [], "total_filtered": 0, "total_all": 0}
+    
     clauses, params = [], []
     if name:
         clauses.append('"Employee Name" LIKE ?'); params.append(f"%{name}%")
@@ -161,15 +163,30 @@ def get_employees(
         clauses.append("Department = ?"); params.append(department)
     if status and status != "All":
         clauses.append('"Employment Status" = ?'); params.append(status)
+    
     where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
-    sql = f"""
+    
+    # Count total for the filtered query
+    count_sql = f'SELECT COUNT(*) FROM employees {where}'
+    
+    # Fetch paginated rows
+    data_sql = f"""
         SELECT "Employee Name", Department, Position, "Employment Status",
                "Manager Name", "Pay Rate", "Performance Score", Sex, Age, "Marital Status"
-        FROM employees {where} LIMIT {int(limit)}
+        FROM employees {where} 
+        LIMIT ? OFFSET ?
     """
+    
     with _hr_db() as conn:
-        rows = [dict(r) for r in conn.execute(sql, params).fetchall()]
-    return {"employees": rows, "total": len(rows)}
+        total_filtered = conn.execute(count_sql, params).fetchone()[0]
+        rows = [dict(r) for r in conn.execute(data_sql, params + [limit, offset]).fetchall()]
+        total_all = conn.execute('SELECT COUNT(*) FROM employees').fetchone()[0]
+        
+    return {
+        "employees": rows, 
+        "total_filtered": total_filtered, 
+        "total_all": total_all
+    }
 
 
 # ── Analytics ─────────────────────────────────────────────────────────────────
@@ -222,18 +239,21 @@ def get_workforce():
 # ── Audit ─────────────────────────────────────────────────────────────────────
 
 @app.get("/api/audit")
-def get_audit(limit: int = Query(200)):
+def get_audit(limit: int = Query(50), offset: int = Query(0)):
     if not AUDIT_PATH.exists():
-        return {"entries": []}
+        return {"entries": [], "total": 0}
     try:
         with _audit_db() as conn:
+            # Count total
+            total = conn.execute("SELECT COUNT(*) FROM audit_log").fetchone()[0]
+            # Fetch latest first, paginated
             rows = [dict(r) for r in conn.execute(
                 "SELECT id, ts, tool, query, user_id, result_rows, status "
-                "FROM audit_log ORDER BY id DESC LIMIT ?", [limit]
+                "FROM audit_log ORDER BY id DESC LIMIT ? OFFSET ?", [limit, offset]
             ).fetchall()]
-        return {"entries": rows}
+        return {"entries": rows, "total": total}
     except Exception:
-        return {"entries": []}
+        return {"entries": [], "total": 0}
 
 
 # ── Departments ───────────────────────────────────────────────────────────────

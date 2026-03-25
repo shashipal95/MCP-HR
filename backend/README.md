@@ -207,7 +207,7 @@ Write to audit trail (called automatically).
 
 
 
-
+uv add -r requirements.txt
 
 # 1. Install deps
 pip install -r requirements.txt
@@ -223,4 +223,4 @@ python project_setup_check.py
 python run_app.py
 
 # 4. Start backend
-uvicorn api_server:app --reload --port 8000
+python -m uvicorn api_server:app --reload --port 8000

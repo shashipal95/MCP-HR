@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
-import { Search, Download, ChevronUp, ChevronDown, Filter } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Search, Download, ChevronUp, ChevronDown } from 'lucide-react'
 
 const PERF_BADGE = {
   'Exceeds':           'badge-exceeds',
@@ -21,12 +21,17 @@ function useDebouncedValue(value, delay = 300) {
 export default function DirectoryPage() {
   const [employees, setEmployees] = useState([])
   const [departments, setDepartments] = useState([])
-  const [total, setTotal] = useState(0)
+  const [totalFiltered, setTotalFiltered] = useState(0)
+  const [totalAll, setTotalAll] = useState(0)
   const [loading, setLoading] = useState(true)
   const [nameSearch, setNameSearch] = useState('')
   const [deptFilter, setDeptFilter] = useState('All')
   const [statusFilter, setStatusFilter] = useState('All')
   const [sort, setSort] = useState({ col: 'Employee Name', dir: 'asc' })
+  
+  // Pagination state
+  const [page, setPage] = useState(1)
+  const pageSize = 15
 
   const debouncedName = useDebouncedValue(nameSearch)
 
@@ -38,7 +43,8 @@ export default function DirectoryPage() {
 
   useEffect(() => {
     setLoading(true)
-    const params = new URLSearchParams({ limit: 500 })
+    const offset = (page - 1) * pageSize
+    const params = new URLSearchParams({ limit: pageSize, offset })
     if (debouncedName) params.set('name', debouncedName)
     if (deptFilter !== 'All') params.set('department', deptFilter)
     if (statusFilter !== 'All') params.set('status', statusFilter)
@@ -47,18 +53,28 @@ export default function DirectoryPage() {
       .then(r => r.json())
       .then(d => {
         setEmployees(d.employees || [])
-        setTotal(d.total || 0)
+        setTotalFiltered(d.total_filtered || 0)
+        setTotalAll(d.total_all || 0)
         setLoading(false)
       })
       .catch(() => setLoading(false))
+  }, [debouncedName, deptFilter, statusFilter, page])
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setPage(1)
   }, [debouncedName, deptFilter, statusFilter])
 
   const COLS = ['Employee Name', 'Department', 'Position', 'Employment Status', 'Manager Name', 'Pay Rate', 'Performance Score']
 
+  // Multi-column sort helper
   const sorted = [...employees].sort((a, b) => {
     const av = a[sort.col] ?? ''
     const bv = b[sort.col] ?? ''
-    return sort.dir === 'asc' ? av.localeCompare(String(bv)) : String(bv).localeCompare(String(av))
+    const cmp = typeof av === 'string' 
+      ? av.localeCompare(String(bv)) 
+      : (av < bv ? -1 : (av > bv ? 1 : 0))
+    return sort.dir === 'asc' ? cmp : -cmp
   })
 
   function toggleSort(col) {
@@ -66,6 +82,8 @@ export default function DirectoryPage() {
   }
 
   function exportCSV() {
+    // Exporting only currently visible page – or we could fetch all. 
+    // To keep it simple for now, we export current view.
     const header = COLS.join(',')
     const rows = sorted.map(e => COLS.map(c => `"${e[c] ?? ''}"`).join(','))
     const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv' })
@@ -75,144 +93,178 @@ export default function DirectoryPage() {
     a.click()
   }
 
+  const totalPages = Math.ceil(totalFiltered / pageSize)
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      {/* Header */}
-      <div style={{
-        padding: '20px 28px 16px',
-        borderBottom: '1px solid var(--border)',
-        background: 'var(--bg-surface)',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+    <div className="flex-column" style={{ height: '100vh', overflow: 'hidden' }}>
+      {/* Header / Toolbar */}
+      <div className="toolbar-container">
+        <div className="page-header-flex">
           <div>
-            <h1 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 20, margin: 0 }}>Employee Directory</h1>
-            <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
-              {loading ? 'Loading…' : `Showing ${sorted.length} of ${total} employees`}
+            <h1 className="page-title">Employee Directory</h1>
+            <p className="page-subtitle">
+              {loading ? 'Loading...' : `Showing ${(page-1)*pageSize + 1} to ${Math.min(page*pageSize, totalFiltered)} of ${totalFiltered} matching employees`}
             </p>
           </div>
-          <button
-            onClick={exportCSV}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '8px 14px', borderRadius: 8,
-              background: 'var(--bg-card)', border: '1px solid var(--border)',
-              color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-accent)'; e.currentTarget.style.color = 'var(--accent)' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
-          >
-            <Download size={14} /> Export CSV
+          <button onClick={exportCSV} className="btn-primary">
+            <Download size={16} strokeWidth={2.5} /> Export Page
           </button>
         </div>
 
         {/* Filters */}
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <div style={{ position: 'relative', flex: '0 0 260px' }}>
-            <Search size={14} color="var(--text-muted)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+        <div className="filter-bar">
+          <div className="filter-input-wrapper large">
+            <Search size={16} className="filter-icon left" />
             <input
-              className="hr-input"
-              placeholder="Search by name…"
+              className="input-glass"
+              placeholder="Search by name..."
               value={nameSearch}
               onChange={e => setNameSearch(e.target.value)}
-              style={{ width: '100%', paddingLeft: 32 }}
+              style={{ paddingLeft: 42 }}
             />
           </div>
 
-          <select
-            className="hr-input"
-            value={deptFilter}
-            onChange={e => setDeptFilter(e.target.value)}
-            style={{ flex: '0 0 180px' }}
-          >
-            <option value="All">All Departments</option>
-            {departments.map(d => <option key={d} value={d}>{d}</option>)}
-          </select>
+          <div className="filter-input-wrapper">
+            <select
+              className="input-glass select-glass"
+              value={deptFilter}
+              onChange={e => setDeptFilter(e.target.value)}
+            >
+              <option value="All">All Departments</option>
+              {departments.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <ChevronDown size={14} className="filter-icon right" />
+          </div>
 
-          <select
-            className="hr-input"
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            style={{ flex: '0 0 160px' }}
-          >
-            <option value="All">All Statuses</option>
-            <option value="Active">Active</option>
-            <option value="Terminated for Cause">Terminated for Cause</option>
-            <option value="Voluntarily Terminated">Voluntarily Terminated</option>
-          </select>
+          <div className="filter-input-wrapper">
+            <select
+              className="input-glass select-glass"
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+            >
+              <option value="All">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Terminated for Cause">Terminated for Cause</option>
+              <option value="Voluntarily Terminated">Voluntarily Terminated</option>
+            </select>
+            <ChevronDown size={14} className="filter-icon right" />
+          </div>
 
           {(nameSearch || deptFilter !== 'All' || statusFilter !== 'All') && (
             <button
               onClick={() => { setNameSearch(''); setDeptFilter('All'); setStatusFilter('All') }}
-              style={{ padding: '8px 12px', borderRadius: 8, background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer' }}
+              className="btn-ghost"
             >
-              Clear filters
+              Clear
             </button>
           )}
         </div>
       </div>
 
       {/* Table */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 28px 20px' }}>
+      <div className="table-wrapper">
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-secondary)' }}>
-            <div style={{ width: 32, height: 32, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-            Loading employees…
+          <div className="loading-content" style={{ padding: 80, textAlign: 'center' }}>
+            <div className="loading-spinner" />
+            <div className="loading-text">Loading employees...</div>
           </div>
         ) : (
-          <table className="hr-table">
-            <thead style={{ position: 'sticky', top: 0, background: 'var(--bg-surface)', zIndex: 1 }}>
-              <tr>
-                {COLS.map(col => (
-                  <th
-                    key={col}
-                    onClick={() => toggleSort(col)}
-                    style={{ cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none' }}
-                  >
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      {col}
-                      {sort.col === col
-                        ? sort.dir === 'asc' ? <ChevronUp size={12} color="var(--accent)" /> : <ChevronDown size={12} color="var(--accent)" />
-                        : <ChevronUp size={12} color="var(--text-muted)" />
-                      }
-                    </span>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((emp, i) => (
-                <tr key={i} className="page-enter" style={{ animationDelay: `${Math.min(i * 15, 300)}ms` }}>
-                  <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{emp['Employee Name']}</td>
-                  <td style={{ color: 'var(--text-secondary)' }}>{emp.Department}</td>
-                  <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{emp.Position}</td>
-                  <td>
-                    <span className={`badge ${emp['Employment Status'] === 'Active' ? 'badge-active' : 'badge-inactive'}`}>
-                      {emp['Employment Status']}
-                    </span>
-                  </td>
-                  <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{emp['Manager Name']}</td>
-                  <td style={{ color: 'var(--accent)', fontWeight: 600 }}>
-                    {emp['Pay Rate'] ? `$${parseFloat(emp['Pay Rate']).toFixed(2)}` : '—'}
-                  </td>
-                  <td>
-                    {emp['Performance Score'] && (
-                      <span className={`badge ${PERF_BADGE[emp['Performance Score']] || 'badge-meets'}`}>
-                        {emp['Performance Score']}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {sorted.length === 0 && (
-                <tr>
-                  <td colSpan={COLS.length} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-                    No employees match your filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          <>
+            <div className="glass-card" style={{ marginTop: 24, overflow: 'hidden' }}>
+              <table className="hr-table">
+                <thead>
+                  <tr>
+                    {COLS.map(col => (
+                      <th
+                        key={col}
+                        onClick={() => toggleSort(col)}
+                        style={{ cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none' }}
+                      >
+                        <span className="flex-row gap-2">
+                          {col}
+                          {sort.col === col
+                            ? sort.dir === 'asc' ? <ChevronUp size={14} color="var(--accent)" /> : <ChevronDown size={14} color="var(--accent)" />
+                            : <ChevronUp size={14} color="transparent" style={{ opacity: 0.5 }} />
+                          }
+                        </span>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.map((emp, i) => (
+                    <tr key={i} className="page-enter" style={{ animationDelay: `${Math.min(i * 15, 300)}ms` }}>
+                      <td className="table-name-col">{emp['Employee Name']}</td>
+                      <td className="table-secondary-col">{emp.Department}</td>
+                      <td className="table-secondary-col">{emp.Position}</td>
+                      <td>
+                        <span className={`badge ${emp['Employment Status'] === 'Active' ? 'badge-active' : 'badge-inactive'}`}>
+                          {emp['Employment Status']}
+                        </span>
+                      </td>
+                      <td className="table-secondary-col">{emp['Manager Name']}</td>
+                      <td className="table-accent-col">
+                        {emp['Pay Rate'] ? `$${parseFloat(emp['Pay Rate']).toFixed(2)}` : '—'}
+                      </td>
+                      <td>
+                        {emp['Performance Score'] && (
+                          <span className={`badge ${PERF_BADGE[emp['Performance Score']] || 'badge-meets'}`}>
+                            {emp['Performance Score']}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {sorted.length === 0 && (
+                    <tr>
+                      <td colSpan={COLS.length} className="table-empty-cell">
+                        No employees match your filters.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination UI */}
+            {totalPages > 1 && (
+              <div className="pagination-container">
+                <button 
+                  className="pagination-btn" 
+                  disabled={page === 1}
+                  onClick={() => setPage(1)}
+                >
+                  «
+                </button>
+                <button 
+                  className="pagination-btn" 
+                  disabled={page === 1}
+                  onClick={() => setPage(p => p - 1)}
+                >
+                  ‹
+                </button>
+                
+                <span className="pagination-info">
+                  Page {page} of {totalPages}
+                </span>
+
+                <button 
+                  className="pagination-btn" 
+                  disabled={page === totalPages}
+                  onClick={() => setPage(p => p + 1)}
+                >
+                  ›
+                </button>
+                <button 
+                  className="pagination-btn" 
+                  disabled={page === totalPages}
+                  onClick={() => setPage(totalPages)}
+                >
+                  »
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
