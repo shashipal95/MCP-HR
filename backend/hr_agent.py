@@ -1,12 +1,16 @@
 """
 HR Agent
 ========
-Uses an Ollama LLM with a ReAct-style loop to decide which MCP tool to call,
+Uses a Groq LLM with a ReAct-style loop to decide which MCP tool to call,
 executes it via the MCP client, and synthesises a final answer.
 
 Supports both:
   - ask()        → returns complete answer string
   - ask_stream() → async generator yielding tokens for streaming
+
+Requires:
+  - GROQ_API_KEY environment variable
+  - pip install langchain-groq
 """
 
 from __future__ import annotations
@@ -20,17 +24,36 @@ from typing import Any, AsyncIterator
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from dotenv import load_dotenv
 
 log = logging.getLogger("hr_agent")
 
-# ── LLM (Ollama) ─────────────────────────────────────────────────────────────
+
+load_dotenv()
+
+# ── LLM (Groq) ───────────────────────────────────────────────────────────────
+import os
+
 try:
-    from langchain_ollama import OllamaLLM
-    _llm = OllamaLLM(model="llama3.2:3b", temperature=0, num_predict=512)
+    from langchain_groq import ChatGroq
+
+    _groq_api_key = os.environ.get("GROQ_API_KEY")
+    if not _groq_api_key:
+        raise EnvironmentError("GROQ_API_KEY environment variable is not set.")
+
+    # Using llama-3.3-70b-versatile — fast and capable on Groq's infrastructure.
+    # Other good options: "llama3-8b-8192", "mixtral-8x7b-32768", "gemma2-9b-it"
+    _llm = ChatGroq(
+        model="llama-3.3-70b-versatile",
+        temperature=0,
+        max_tokens=512,
+        api_key=_groq_api_key,
+    )
     LLM_AVAILABLE = True
-except Exception:
+    log.info("Groq LLM initialised (model=llama-3.3-70b-versatile).")
+except Exception as _e:
     LLM_AVAILABLE = False
-    log.warning("Ollama not available – agent will use direct tool calls only.")
+    log.warning("Groq not available – agent will use direct tool calls only. Error: %s", _e)
 
 # ─────────────────────────────────────────────────────────────────────────────
 SYSTEM_PROMPT = """\
@@ -176,42 +199,33 @@ MAX_TOOL_CALLS = 3
 
 
 def _run_llm_sync(prompt: str) -> str:
-    """Run LLM synchronously (used inside tool-call phase)."""
-    return _llm.invoke(prompt).strip()
+    """Run LLM synchronously (used inside tool-call phase).
+    ChatGroq returns an AIMessage; extract .content as a string.
+    """
+    result = _llm.invoke(prompt)
+    # AIMessage has a .content attribute; plain string fallback for safety
+    return (result.content if hasattr(result, "content") else str(result)).strip()
 
 
 async def _run_llm_async(prompt: str) -> str:
-    """Run blocking LLM call in a thread so we don't block the event loop."""
+    """Run LLM call in a thread so we don't block the event loop."""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, _run_llm_sync, prompt)
 
 
 async def _stream_llm(prompt: str) -> AsyncIterator[str]:
     """
-    Stream tokens from Ollama using langchain's .stream() method.
-    Runs the blocking iterator in a thread pool to avoid blocking the event loop.
+    Stream tokens from Groq using langchain's async .astream() method.
+    ChatGroq supports native async streaming — each chunk is an AIMessageChunk
+    with a .content attribute.
     """
-    loop = asyncio.get_event_loop()
-    queue: asyncio.Queue[str | None] = asyncio.Queue()
-
-    def _produce():
-        try:
-            for chunk in _llm.stream(prompt):
-                # chunk is a string token from langchain-ollama
-                loop.call_soon_threadsafe(queue.put_nowait, chunk)
-        except Exception as exc:
-            loop.call_soon_threadsafe(queue.put_nowait, f"\n[Stream error: {exc}]")
-        finally:
-            loop.call_soon_threadsafe(queue.put_nowait, None)  # sentinel
-
-    # Start producer in thread pool
-    loop.run_in_executor(None, _produce)
-
-    while True:
-        token = await queue.get()
-        if token is None:
-            break
-        yield token
+    try:
+        async for chunk in _llm.astream(prompt):
+            token = chunk.content if hasattr(chunk, "content") else str(chunk)
+            if token:
+                yield token
+    except Exception as exc:
+        yield f"\n[Stream error: {exc}]"
 
 
 # ─────────────────────────────────────────────────────────────────────────────

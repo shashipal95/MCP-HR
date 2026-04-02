@@ -4,9 +4,18 @@
 # ── MCP (Model Context Protocol) ─────────────────────────────────────────────
 mcp>=1.0.0
 
-# ── LLM & Embeddings (Ollama) ─────────────────────────────────────────────────
+# ── LLM (Groq) ───────────────────────────────────────────────────────────────
+# Set GROQ_API_KEY in your environment before running.
+# Get a free key at: https://console.groq.com
+langchain-groq>=0.1.0
+
+# ── Embeddings (HuggingFace — local, no API key needed) ──────────────────────
+# Replaces OllamaEmbeddings. Downloads ~90 MB model on first run.
+langchain-huggingface>=0.0.3
+sentence-transformers>=2.0.0
+
+# ── LangChain core ───────────────────────────────────────────────────────────
 langchain-community>=0.2.0
-langchain-ollama>=0.1.0
 langchain-text-splitters>=0.2.0
 langchain-core>=0.2.0
 
@@ -17,8 +26,7 @@ chromadb>=0.5.0
 pandas>=2.0.0
 pypdf>=4.0.0
 
-# ── UI ────────────────────────────────────────────────────────────────────────
+# ── UI & API ──────────────────────────────────────────────────────────────────
 streamlit>=1.35.0
-
 fastapi
 uvicorn

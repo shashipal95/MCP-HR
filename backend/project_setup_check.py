@@ -34,7 +34,9 @@ packages = {
     "mcp":                     "pip install mcp",
     "streamlit":               "pip install streamlit",
     "langchain_community":     "pip install langchain-community",
-    "langchain_ollama":        "pip install langchain-ollama",
+    "langchain_groq":          "pip install langchain-groq",
+    "langchain_huggingface":   "pip install langchain-huggingface",
+    "sentence_transformers":   "pip install sentence-transformers",
     "chromadb":                "pip install chromadb",
     "pandas":                  "pip install pandas",
     "langchain_text_splitters":"pip install langchain-text-splitters",
@@ -89,19 +91,14 @@ check("audit.db (audit trail)",
       Path("audit.db").exists(),
       "Will be created automatically on first query.")
 
-# ── Ollama ────────────────────────────────────────────────────────────────────
-section("Ollama")
-import subprocess
-try:
-    result = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=5)
-    ollama_ok = result.returncode == 0
-    check("Ollama running", ollama_ok, "Install from https://ollama.ai and run: ollama serve")
-    if ollama_ok:
-        models_output = result.stdout
-        check("llama3 model",          "llama3" in models_output, "ollama pull llama3")
-        check("nomic-embed-text model","nomic-embed-text" in models_output, "ollama pull nomic-embed-text")
-except (FileNotFoundError, subprocess.TimeoutExpired):
-    check("Ollama installed", False, "Install from https://ollama.ai")
+# ── Groq API Key ──────────────────────────────────────────────────────────────
+section("Groq API Key")
+groq_key = os.environ.get("GROQ_API_KEY", "")
+check(
+    "GROQ_API_KEY set",
+    bool(groq_key),
+    "export GROQ_API_KEY=gsk_...   (get a free key at https://console.groq.com)",
+)
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 section("Summary")
