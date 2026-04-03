@@ -64,7 +64,7 @@ export default function Sidebar() {
           <span className="status-badge-title">SYSTEM ACTIVE</span>
         </div>
         <div className="status-badge-body">
-          API: <span className="status-badge-link">localhost:8000</span><br />
+          API: <span className="status-badge-link">railway.app</span><br />
           LLM: <span className="status-badge-link">llama3.2:3b</span>
         </div>
       </div>
