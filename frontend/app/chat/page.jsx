@@ -192,9 +192,6 @@ export default function ChatPage() {
       <div className="chat-header">
         <div>
           <h1 className="page-title">HR Chat Assistant</h1>
-          <p className="page-subtitle">
-            Your premium AI copilot for workforce analytics & policy queries.
-          </p>
         </div>
         <div className="flex-row gap-4">
           <input

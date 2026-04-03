@@ -559,8 +559,8 @@ h6 {
 /* Theme toggle */
 .theme-toggle {
   position: fixed;
-  top: 24px;
-  right: 32px;
+  bottom: 54px;
+  right: 24px;
   z-index: 1000;
   width: 44px;
   height: 44px;
@@ -596,12 +596,14 @@ h6 {
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
   position: relative;
 }
 
 .chat-header {
-  padding: 24px 32px;
+  padding: 12px 24px;
   border-bottom: 1px solid var(--border);
   background: rgba(11, 17, 32, 0.65);
   backdrop-filter: blur(12px);
@@ -718,7 +720,7 @@ h6 {
 }
 
 .chat-input-area {
-  padding: 20px 32px 28px;
+  padding: 16px 80px 16px 24px;
   border-top: 1px solid var(--border);
   background: rgba(11, 17, 32, 0.8);
   backdrop-filter: blur(16px);
@@ -735,8 +737,8 @@ h6 {
   align-items: flex-end;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 14px 16px 14px 24px;
+  border-radius: 12px;
+  padding: 10px 14px 10px 16px;
   box-shadow: var(--shadow-sm);
   transition: all 0.2s;
 }
@@ -755,8 +757,8 @@ h6 {
   font-family: var(--font-body);
   font-size: 16px;
   resize: none;
-  line-height: 1.5;
-  padding-top: 10px;
+  line-height: 1.4;
+  padding-top: 8px;
 }
 
 .chat-textarea.streaming {
@@ -764,10 +766,10 @@ h6 {
 }
 
 .chat-stop-btn {
-  width: 46px;
+  width: 36px;
   /* slightly smaller than input height */
-  height: 46px;
-  border-radius: 12px;
+  height: 36px;
+  border-radius: 10px;
   background: rgba(244, 63, 94, 0.15);
   border: 1px solid rgba(244, 63, 94, 0.4);
   color: #f43f5e;
@@ -783,10 +785,10 @@ h6 {
 }
 
 .chat-send-btn {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   padding: 0;
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 .chat-send-btn.disabled {
